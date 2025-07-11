@@ -49,4 +49,4 @@
 #include "netmgr.h"
 #include <stdio.h>
 #include "cmsis_os2.h"
-
+#include "HT_DHT22.h"

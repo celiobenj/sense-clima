@@ -1,7 +1,7 @@
 AVAILABLE_TARGETS = qcx212_0h00
 TOOLCHAIN         = GCC
-PROJECT_NAME      = Template
-BINNAME           = Template
+PROJECT_NAME      = SenseClima
+BINNAME           = SenseClima
 
 TOP := ../..
 

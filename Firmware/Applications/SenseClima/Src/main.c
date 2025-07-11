@@ -5,8 +5,6 @@
 #include "FreeRTOS.h"
 #include "main.h"
 
-
-
 /**
   \fn          static void appInit(void *arg)
   \brief
@@ -17,8 +15,6 @@ static void appInit(void *arg)
    // add user defined init code
 
     return;
-
-
 }
 
 /**
@@ -36,5 +32,4 @@ void main_entry(void)
         osKernelStart();
     }
     while(1);
-
 }

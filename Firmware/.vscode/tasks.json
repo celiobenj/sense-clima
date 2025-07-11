@@ -7,25 +7,25 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Compile - Template",
+            "label": "Compile - SenseClima",
             "group": "build",
             "type": "shell",
             "command": "make.exe",
-            "args": ["-j4", "gccall", "TARGET=qcx212_0h00", "V=0", "PROJECT=Template"]
+            "args": ["-j4", "gccall", "TARGET=qcx212_0h00", "V=0", "PROJECT=SenseClima"]
         },
         {
-            "label": "Debug - Template",
+            "label": "Debug - SenseClima",
             "group": "build",
             "type": "shell",
             "command": "python",
-            "args": ["Debug/Scripts/debug.py", "Template"]
+            "args": ["Debug/Scripts/debug.py", "SenseClima"]
         },
         {
-            "label": "Run - Template",
+            "label": "Run - SenseClima",
             "group": "build",
             "type": "shell",
             "command": "python",
-            "args": ["Debug/Scripts/debug.py", "Template"]
+            "args": ["Debug/Scripts/debug.py", "SenseClima"]
         },
         {
             "label": "COM Select",
