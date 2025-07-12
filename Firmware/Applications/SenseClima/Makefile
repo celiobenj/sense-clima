@@ -1,7 +1,7 @@
 AVAILABLE_TARGETS = qcx212_0h00
 TOOLCHAIN         = GCC
 PROJECT_NAME      = SenseClima
-BINNAME           = SenseClima
+BINNAME           = HTNB32L-XXX-SenseClima
 
 TOP := ../..
 
