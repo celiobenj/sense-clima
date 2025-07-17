@@ -44,7 +44,10 @@
         "ht_bsp_custom.h": "c",
         "flash_qcx212_rt.h": "c",
         "ht_dht22.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "slpman_qcx212.h": "c",
+        "cmimm.h": "c",
+        "sockets.h": "c"
     },
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/sources/poky/bitbake/lib",
