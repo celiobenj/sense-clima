@@ -4,6 +4,7 @@
     "cortex-debug.gdbPath": "C:/gcc_arm/bin/arm-none-eabi-gdb",
     "C_Cpp.errorSquiggles": "enabled",
     "files.associations": {
+        ".gitignore": "git-commit",
         "*.inc": "bitbake",
         "*.rmd": "markdown",
         "cmsis_gcc.h": "c",
@@ -41,7 +42,16 @@
         "bsp.h": "c",
         "debug_log.h": "c",
         "ht_bsp_custom.h": "c",
-        "flash_qcx212_rt.h": "c"
+        "flash_qcx212_rt.h": "c",
+        "ht_dht22.h": "c",
+        "freertos.h": "c",
+        "slpman_qcx212.h": "c",
+        "cmimm.h": "c",
+        "sockets.h": "c",
+        "ht_senseclima.h": "c",
+        "mqttclient.h": "c",
+        "flash_qcx212.h": "c",
+        "pmu_qcx212.h": "c"
     },
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/sources/poky/bitbake/lib",

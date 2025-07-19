@@ -108,7 +108,11 @@ typedef enum {
  * \retval none
  *******************************************************************/
 void HT_FSM_SetSubscribeBuff(uint8_t *buff, uint8_t payload_len);
+<<<<<<< HEAD
+void interval_manager(uint8_t *payload, uint8_t payload_len, 
+=======
 void led_state_manager(uint8_t *payload, uint8_t payload_len, 
+>>>>>>> main
     uint8_t *topic, uint8_t topic_len);
 
 /*!******************************************************************
