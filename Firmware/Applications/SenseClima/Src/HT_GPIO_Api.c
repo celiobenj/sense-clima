@@ -19,6 +19,11 @@
 #include <stdio.h>
 #include "string.h"
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> main
 /* Function prototypes  ------------------------------------------------------------------*/
 
 /*!******************************************************************
@@ -30,7 +35,11 @@
  *
  * \retval none.
  *******************************************************************/
+<<<<<<< HEAD
 // static void HT_GPIO_IRQnCallback(void);
+=======
+//static void HT_GPIO_IRQnCallback(void);
+>>>>>>> main
 
 /* ---------------------------------------------------------------------------------------*/
 /*
@@ -43,7 +52,11 @@ static void HT_GPIO_IRQnCallback(void) {
         blue_irqn_mask = GPIO_SaveAndSetIRQMask(BLUE_BUTTON_INSTANCE);
         btn = 1;
         GPIO_ClearInterruptFlags(BLUE_BUTTON_INSTANCE, BLUE_BUTTON_MASK);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     } else if(GPIO_GetInterruptFlags(WHITE_BUTTON_INSTANCE) & WHITE_BUTTON_MASK) {
 
        // button_color = HT_WHITE_BUTTON;
@@ -51,12 +64,17 @@ static void HT_GPIO_IRQnCallback(void) {
         btn=2;
         GPIO_ClearInterruptFlags(WHITE_BUTTON_INSTANCE, WHITE_BUTTON_MASK);
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     osMessageQueuePut(btnQueue, &btn, 0, 0);
 
 }
 */
 
+<<<<<<< HEAD
 void HT_GPIO_WritePin(uint16_t pin, uint32_t instance, uint16_t value)
 {
     // Write the value in the GPIO pin
@@ -78,6 +96,14 @@ void gpio_set_direction(gpio_pin_direction_t direction)
 
 void HT_GPIO_ButtonInit(void)
 {
+=======
+void HT_GPIO_WritePin(uint16_t pin, uint32_t instance, uint16_t value) {
+    // Write the value in the GPIO pin
+    GPIO_PinWrite(instance, 1 << pin, (value ? 1 << pin : 0)); 
+}
+
+void HT_GPIO_ButtonInit(void) {
+>>>>>>> main
 
     pad_config_t padConfig;
     gpio_pin_config_t config;
@@ -95,6 +121,7 @@ void HT_GPIO_ButtonInit(void)
     PAD_SetPinPullConfig(WHITE_BUTTON_PAD_ID, PAD_InternalPullUp);
 
     config.pinDirection = GPIO_DirectionInput;
+<<<<<<< HEAD
     config.misc.interruptConfig = GPIO_InterruptDisabled;
 
     GPIO_PinConfig(BLUE_BUTTON_INSTANCE, BLUE_BUTTON_PIN, &config);
@@ -103,6 +130,20 @@ void HT_GPIO_ButtonInit(void)
 
 void HT_GPIO_LedInit(void)
 {
+=======
+    config.misc.interruptConfig = GPIO_InterruptDisabled; 
+;
+
+    GPIO_PinConfig(BLUE_BUTTON_INSTANCE, BLUE_BUTTON_PIN, &config);
+    GPIO_PinConfig(WHITE_BUTTON_INSTANCE, WHITE_BUTTON_PIN, &config);
+
+    // Set IQR vector and enable IRQ
+    //XIC_SetVector(PXIC_Gpio_IRQn, HT_GPIO_IRQnCallback);
+    //XIC_EnableIRQ(PXIC_Gpio_IRQn);
+}
+
+void HT_GPIO_LedInit(void) {
+>>>>>>> main
     pad_config_t padConfig;
     gpio_pin_config_t config;
 
@@ -125,6 +166,10 @@ void HT_GPIO_LedInit(void)
 
     // Set IO Voltage to 3.3V
     slpManNormalIOVoltSet(IOVOLT_3_30V);
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 }
 
 /************************ HT Micron Semicondutores S.A *****END OF FILE****/

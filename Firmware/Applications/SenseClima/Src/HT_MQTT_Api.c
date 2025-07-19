@@ -21,6 +21,7 @@ extern volatile uint8_t subscribe_callback;
 
 static MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
+<<<<<<< HEAD
 #if MQTT_TLS_ENABLE == 1
 static MqttClientContext mqtt_client_ctx;
 #endif
@@ -31,6 +32,18 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
 {
 
 #if MQTT_TLS_ENABLE == 1
+=======
+#if  MQTT_TLS_ENABLE == 1
+static MqttClientContext mqtt_client_ctx;
+#endif
+
+uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *addr, int32_t port, uint32_t send_timeout, uint32_t rcv_timeout, char *clientID, 
+                                        char *username, char *password, uint8_t mqtt_version, uint32_t keep_alive_interval, uint8_t *sendbuf, 
+                                        uint32_t sendbuf_size, uint8_t *readbuf, uint32_t readbuf_size) {
+
+
+#if  MQTT_TLS_ENABLE == 1
+>>>>>>> main
     mqtt_client_ctx.caCertLen = 0;
     mqtt_client_ctx.port = port;
     mqtt_client_ctx.host = addr;
@@ -48,18 +61,27 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
     connectData.will.qos = QOS0;
     connectData.cleansession = false;
 
+<<<<<<< HEAD
 #if MQTT_TLS_ENABLE == 1
 
     printf("Starting TLS handshake...\n");
 
     if (HT_MQTT_TLSConnect(&mqtt_client_ctx, mqtt_network) != 0)
     {
+=======
+#if  MQTT_TLS_ENABLE == 1
+
+    printf("Starting TLS handshake...\n");
+
+    if(HT_MQTT_TLSConnect(&mqtt_client_ctx, mqtt_network) != 0) {
+>>>>>>> main
         printf("TLS Connection Error!\n");
         return 1;
     }
 
     MQTTClientInit(mqtt_client, mqtt_network, MQTT_GENERAL_TIMEOUT, (unsigned char *)sendbuf, sendbuf_size, (unsigned char *)readbuf, readbuf_size);
 
+<<<<<<< HEAD
     if ((MQTTConnect(mqtt_client, &connectData)) != 0)
     {
         mqtt_client->ping_outstanding = 1;
@@ -67,6 +89,12 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
     }
     else
     {
+=======
+    if ((MQTTConnect(mqtt_client, &connectData)) != 0) {
+        mqtt_client->ping_outstanding = 1;
+        return 1;
+    } else {
+>>>>>>> main
         mqtt_client->ping_outstanding = 0;
     }
 
@@ -74,6 +102,7 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
 
     NetworkInit(mqtt_network);
     MQTTClientInit(mqtt_client, mqtt_network, MQTT_GENERAL_TIMEOUT, (unsigned char *)sendbuf, sendbuf_size, (unsigned char *)readbuf, readbuf_size);
+<<<<<<< HEAD
 
     if ((NetworkSetConnTimeout(mqtt_network, send_timeout, rcv_timeout)) != 0)
     {
@@ -99,14 +128,40 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
             }
             else
             {
+=======
+    
+    if((NetworkSetConnTimeout(mqtt_network, send_timeout, rcv_timeout)) != 0) {
+        mqtt_client->keepAliveInterval = connectData.keepAliveInterval;
+        mqtt_client->ping_outstanding = 1;
+
+    } else {
+        
+        if ((NetworkConnect(mqtt_network, addr, port)) != 0) {
+            mqtt_client->keepAliveInterval = connectData.keepAliveInterval;
+            mqtt_client->ping_outstanding = 1;
+            
+            return 1;
+
+        } else {
+            if ((MQTTConnect(mqtt_client, &connectData)) != 0) {
+                mqtt_client->ping_outstanding = 1;
+                return 1;
+    
+            } else {
+>>>>>>> main
                 mqtt_client->ping_outstanding = 0;
             }
         }
 
+<<<<<<< HEAD
         if (mqtt_client->ping_outstanding == 0)
         {
             if ((MQTTStartRECVTask(mqtt_client)) != SUCCESS)
             {
+=======
+        if(mqtt_client->ping_outstanding == 0) {
+            if ((MQTTStartRECVTask(mqtt_client)) != SUCCESS){
+>>>>>>> main
                 return 1;
             }
         }
@@ -117,8 +172,12 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
     return 0;
 }
 
+<<<<<<< HEAD
 int HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup)
 {
+=======
+int HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup) {
+>>>>>>> main
 
     MQTTMessage message;
 
@@ -132,6 +191,7 @@ int HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint
     return MQTTPublish(mqtt_client, topic, &message);
 }
 
+<<<<<<< HEAD
 void HT_MQTT_SubscribeCallback(MessageData *msg)
 {
     printf("Subscribe received: %s from topic:[%s]\n", msg->message->payload, msg->topicName->lenstring.data);
@@ -147,6 +207,21 @@ void HT_MQTT_SubscribeCallback(MessageData *msg)
 
 void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos)
 {
+=======
+void HT_MQTT_SubscribeCallback(MessageData *msg) {
+    printf("Subscribe received: %s from topic:[%s]\n", msg->message->payload, msg->topicName->lenstring.data);
+
+    //subscribe_callback = 1;
+    //HT_FSM_SetSubscribeBuff((uint8_t *)msg->message->payload, (uint8_t)msg->message->payloadlen);
+    led_state_manager((uint8_t *)msg->message->payload, (uint8_t)msg->message->payloadlen, 
+        (uint8_t *)msg->topicName->lenstring.data, (uint8_t)msg->topicName->lenstring.len);
+    
+        memset(msg->message->payload, 0, msg->message->payloadlen);
+        memset(msg->topicName->lenstring.data, 0, msg->topicName->lenstring.len);
+}
+
+void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos) {
+>>>>>>> main
     MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
 }
 

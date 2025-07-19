@@ -52,6 +52,7 @@ static void HT_Yield_Thread(void *arg);
 static void HT_FSM_MQTTWritePayload(uint8_t *ptr, uint8_t size);
 
 /*!******************************************************************
+<<<<<<< HEAD
  * \fn static void HT_FSM_LedStatus(HT_Led_Type led, uint16_t state)
  * \brief Change a specific led status to ON/OFF.
  *
@@ -64,6 +65,8 @@ static void HT_FSM_MQTTWritePayload(uint8_t *ptr, uint8_t size);
 static void HT_FSM_LedStatus(HT_Led_Type led, uint16_t state);
 
 /*!******************************************************************
+=======
+>>>>>>> main
  * \fn static HT_ConnectionStatus HT_FSM_MQTTConnect(void)
  * \brief Connects the device to the MQTT Broker and returns the connection
  * status.
@@ -93,18 +96,22 @@ static const char password[] = {""};
 static const char addr[] = {"131.255.82.115"};
 static char topic[25] = {0};
 
+<<<<<<< HEAD
 static const char topic_temperature[] = {"hana/prototipagem/senseclima/01/temperature"};
 static const char topic_humidity[] = {"hana/prototipagem/senseclima/01/humidity"};
 static const char topic_interval[] = {"hana/prototipagem/senseclima/01/interval"};
 
 // extern uint8_t mqttEpSlpHandler;
 
+=======
+>>>>>>> main
 // FSM state.
 volatile HT_FSM_States state = HT_WAIT_FOR_BUTTON_STATE;
 
 // Buffer where the digital twin messages will be stored.
 static uint8_t subscribe_buffer[HT_SUBSCRIBE_BUFF_SIZE] = {0};
 
+<<<<<<< HEAD
 static StaticTask_t yield_thread, dht_thread, sleep_thread;
 static uint8_t yieldTaskStack[1024 * 4], dhtTaskStack[1024 * 4], sleepTaskStack[1024 * 2];
 
@@ -335,6 +342,19 @@ static HT_ConnectionStatus HT_FSM_MQTTConnect(void)
                         (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE))
     {
         return HT_NOT_CONNECTED;
+=======
+void HT_FSM_SetSubscribeBuff(uint8_t *buff, uint8_t payload_len)
+{
+    memcpy(subscribe_buffer, buff, payload_len);
+}
+
+static HT_ConnectionStatus HT_FSM_MQTTConnect(void) {
+
+    // Connect to MQTT Broker using client, network and parameters needded. 
+    if(HT_MQTT_Connect(&mqttClient, &mqttNetwork, (char *)addr, HT_MQTT_PORT, HT_MQTT_SEND_TIMEOUT, HT_MQTT_RECEIVE_TIMEOUT,
+                (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE)) {
+        return HT_NOT_CONNECTED;   
+>>>>>>> main
     }
 
     printf("MQTT Connection Success!\n");
@@ -342,6 +362,7 @@ static HT_ConnectionStatus HT_FSM_MQTTConnect(void)
     return HT_CONNECTED;
 }
 
+<<<<<<< HEAD
 void HT_FSM_SetSubscribeBuff(uint8_t *buff, uint8_t payload_len)
 {
     memcpy(subscribe_buffer, buff, payload_len);
@@ -352,12 +373,43 @@ void interval_manager(uint8_t *payload, uint8_t payload_len,
 {
 
     printf("\nmsg:[%s] | topico:[%s]\n", payload, topic);
+=======
+void HT_FSM_MQTTPublishDHT22state(void)
+{
+    float temperature, humidity;
+    int dht_status = DHT22_Read(&temperature, &humidity);
+
+    if (dht_status == 0)
+    {
+        char temp_payload[16];
+        char hum_payload[16];
+
+        // WORKAROUND: Convert float para string manualmente para evitar problemas
+        // com a falta de suporte a '%f' em snprintf em ambientes embarcados.
+        int temp_int_x10 = (int)(temperature * 10);
+        int hum_int_x10 = (int)(humidity * 10);
+
+        // Formata a string como "parte_inteira.parte_decimal"
+        snprintf(temp_payload, sizeof(temp_payload), "%d.%d", temp_int_x10 / 10, temp_int_x10 % 10);
+        snprintf(hum_payload, sizeof(hum_payload), "%d.%d", hum_int_x10 / 10, hum_int_x10 % 10);
+
+        HT_MQTT_Publish(&mqttClient, "hana/prototipagem/senseclima/sensor01/temperature", (uint8_t *)temp_payload, strlen(temp_payload), QOS0, 0, 0, 0);
+        HT_MQTT_Publish(&mqttClient, "hana/prototipagem/senseclima/sensor01/humidity", (uint8_t *)hum_payload, strlen(hum_payload), QOS0, 0, 0, 0);
+        printf("DHT22 published: temp=%s, hum=%s\n", temp_payload, hum_payload); // Agora os valores devem aparecer aqui
+    }
+    else
+    {
+        printf("Erro ao ler DHT22 (codigo: %d)\n", dht_status);
+    }
+    state = HT_WAIT_FOR_BUTTON_STATE;
+>>>>>>> main
 }
 
 void HT_Fsm(void)
 {
 
     // Initialize MQTT Client and Connect to MQTT Broker defined in global variables
+<<<<<<< HEAD
 
     printf("\nTentando Conectar ao MQTT CLient...");
     /*
@@ -393,6 +445,33 @@ void HT_Fsm(void)
     {
         osDelay(100);
     }
+=======
+    if (HT_FSM_MQTTConnect() == HT_NOT_CONNECTED)
+    {
+        printf("\n MQTT Connection Error!\n");
+        while (1)
+            ;
+    }
+
+    // Init irqn after connection
+    HT_GPIO_ButtonInit();
+
+    // HT_MQTT_Subscribe(&mqttClient, topic_blueled_sw, QOS0);
+    // HT_MQTT_Subscribe(&mqttClient, topic_whiteled_sw, QOS0);
+
+    // HT_Yield_Thread(NULL);
+
+    // Led to sinalize connection stablished
+    // HT_LED_GreenLedTask(NULL);
+
+    // Ldr Task
+    // HT_LDR_Task(NULL);
+
+    // Btn Task()
+    // HT_Btn_Thread_Start(NULL);
+
+    printf("Executing fsm...\n");
+>>>>>>> main
 }
 
 /************************ HT Micron Semicondutores S.A *****END OF FILE****/

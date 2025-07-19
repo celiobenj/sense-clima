@@ -23,6 +23,9 @@
 #pragma once
 
 #include "htnb32lxxx_hal_usart.h"
+#include "HT_SenseClima.h"
+#include "HT_GPIO_Api.h"
+
 #include "bsp.h"
 #include "HT_BSP_Custom.h"
 #include "osasys.h"
@@ -41,6 +44,7 @@
 #include "plat_config.h"
 #include "debug_trace.h"
 #include "hal_uart.h"
+#include "HT_MQTT_Api.h"
 #include "flash_qcx212.h"
 #include "flash_qcx212_rt.h"
 #include "slpman_qcx212.h"
@@ -48,6 +52,7 @@
 #include "netmgr.h"
 #include <stdio.h>
 #include "cmsis_os2.h"
+<<<<<<< HEAD
 #include "HT_MQTT_Api.h"
 #include "mw_config.h"
 #include "pmu_qcx212.h"
@@ -57,6 +62,11 @@
 #include "HT_SenseClima.h"
 #include "HT_GPIO_Api.h"
 #include "HT_DHT22.h"
+=======
+
+
+/* Defines  ------------------------------------------------------------------*/
+>>>>>>> main
 
 #define QMSG_ID_BASE               (0x160) 
 #define QMSG_ID_NW_IPV4_READY      (QMSG_ID_BASE)
@@ -69,4 +79,9 @@
 #define INIT_TASK_STACK_SIZE    (1024*6)
 #define RINGBUF_READY_FLAG      (0x06)
 #define APP_EVENT_QUEUE_SIZE    (10)
+<<<<<<< HEAD
 #define MAX_PACKET_SIZE         (256)
+=======
+#define MAX_PACKET_SIZE         (256)
+
+>>>>>>> main
