@@ -37,7 +37,6 @@
 #include "ps_lib_api.h"
 #include "lwip/netdb.h"
 #include "debug_log.h"
-#include "slpman_qcx212.h"
 #include "MQTTClient.h"
 #include "plat_config.h"
 #include "debug_trace.h"
@@ -49,34 +48,25 @@
 #include "netmgr.h"
 #include <stdio.h>
 #include "cmsis_os2.h"
-#include "main.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "slpman_qcx212.h"
-#include "pad_qcx212.h"
-#include "HT_gpio_qcx212.h"
-#include "ic_qcx212.h"
-#include "HT_ic_qcx212.h"
-#include "hal_adc.h"
-#include "HT_adc_qcx212.h"
-#include <stdio.h>
-#include "string.h"
-#include "adc_qcx212.h"
-#include "HT_bsp.h"
-#include "stdint.h"
-#include <stdio.h>
-#include "bsp.h"
-#include "main.h"
-#include "pad_qcx212.h"
-#include "HT_gpio_qcx212.h"
-#include "ic_qcx212.h"
-#include "HT_ic_qcx212.h"
-#include "htnb32lxxx_hal_usart.h"
-#include "HT_bsp.h"
-#include <stdio.h>
-#include <stdbool.h> 
-#include "htnb32lxxx_hal_usart.h"
-#include "slpman_qcx212.h"
-#include "HT_Peripheral_Config.h"
-#include "HT_usart_unilog.h"
+#include "HT_MQTT_Api.h"
+#include "mw_config.h"
+#include "pmu_qcx212.h"
+#include "ps_lib_api.h"
+#include "flash_qcx212.h"
+
+#include "HT_SenseClima.h"
+#include "HT_GPIO_Api.h"
+#include "HT_DHT22.h"
+
+#define QMSG_ID_BASE               (0x160) 
+#define QMSG_ID_NW_IPV4_READY      (QMSG_ID_BASE)
+#define QMSG_ID_NW_IPV6_READY      (QMSG_ID_BASE + 1)
+#define QMSG_ID_NW_IPV4_6_READY    (QMSG_ID_BASE + 2)
+#define QMSG_ID_NW_DISCONNECT      (QMSG_ID_BASE + 3)
+#define QMSG_ID_SOCK_SENDPKG       (QMSG_ID_BASE + 4)
+#define QMSG_ID_SOCK_RECVPKG       (QMSG_ID_BASE + 5)
+
+#define INIT_TASK_STACK_SIZE    (1024*6)
+#define RINGBUF_READY_FLAG      (0x06)
+#define APP_EVENT_QUEUE_SIZE    (10)
+#define MAX_PACKET_SIZE         (256)

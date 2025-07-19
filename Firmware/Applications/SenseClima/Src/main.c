@@ -1,116 +1,188 @@
-#include "string.h"
-#include "bsp.h"
-#include "ostask.h"
-#include "debug_log.h"
-#include "FreeRTOS.h"
 #include "main.h"
+
+static StaticTask_t initTask;
+static uint8_t appTaskStack[INIT_TASK_STACK_SIZE];
+static volatile uint32_t Event;
+static QueueHandle_t psEventQueueHandle;
+static uint8_t gImsi[16] = {0};
+static uint32_t gCellID = 0;
+static NmAtiSyncRet gNetworkInfo;
+
+uint8_t mqttEpSlpHandler = 0xff;
+
+static volatile uint8_t simReady = 0;
+
+static uint32_t uart_cntrl = (ARM_USART_MODE_ASYNCHRONOUS | ARM_USART_DATA_BITS_8 | ARM_USART_PARITY_NONE |
+                              ARM_USART_STOP_BITS_1 | ARM_USART_FLOW_CONTROL_NONE);
 
 extern USART_HandleTypeDef huart1;
 
-// Definições para o pino do DHT22 
-#define DHT22_INSTANCE              0
-#define DHT22_PIN                   10
-#define DHT22_PAD_ID                25
-#define DHT22_PAD_ALT_FUNC          PAD_MuxAlt0
+static void HT_SetConnectioParameters(void)
+{
+    uint8_t cid = 0;
+    PsAPNSetting apnSetting;
+    int32_t ret;
+    uint8_t networkMode = 0; // nb-iot network mode
+    uint8_t bandNum = 1;
+    uint8_t band = 28;
 
-// Variável externa do sistema que contém o clock da CPU em Hz
-extern uint32_t SystemCoreClock;
-
-void precise_delay_us(uint32_t us) {
-   
-    uint32_t cycles_per_us = SystemCoreClock / 1000000 / 8;
-    for (volatile uint32_t i = 0; i < us * cycles_per_us; ++i) {
-        __asm__("nop"); // 
+    ret = appSetBandModeSync(networkMode, bandNum, &band);
+    if (ret == CMS_RET_SUCC)
+    {
+        printf("SetBand Result: %d\n", ret);
     }
+
+    apnSetting.cid = 0;
+    apnSetting.apnLength = strlen("iot.datatem.com.br");
+    strcpy((char *)apnSetting.apnStr, "iot.datatem.com.br");
+    apnSetting.pdnType = CMI_PS_PDN_TYPE_IP_V4V6;
+    ret = appSetAPNSettingSync(&apnSetting, &cid);
 }
 
-void delay_ms(uint32_t ms) {
-    for (uint32_t i = 0; i < ms; ++i) {
-        precise_delay_us(1000);
-    }
-}
-
-static void dht22_pin_as_output() {
-    GPIO_InitType GPIO_InitStruct = {0};
-    GPIO_InitStruct.af = DHT22_PAD_ALT_FUNC;
-    GPIO_InitStruct.pad_id = DHT22_PAD_ID;
-    GPIO_InitStruct.gpio_pin = DHT22_PIN;
-    GPIO_InitStruct.pin_direction = GPIO_DirectionOutput;
-    GPIO_InitStruct.init_output = 1; 
-    GPIO_InitStruct.pull = PAD_AutoPull;
-    GPIO_InitStruct.instance = DHT22_INSTANCE;
-    HT_GPIO_Init(&GPIO_InitStruct);
-}
-
-static void dht22_pin_as_input() {
-    GPIO_InitType GPIO_InitStruct = {0};
-    GPIO_InitStruct.af = DHT22_PAD_ALT_FUNC;
-    GPIO_InitStruct.pad_id = DHT22_PAD_ID;
-    GPIO_InitStruct.gpio_pin = DHT22_PIN;
-    GPIO_InitStruct.pin_direction = GPIO_DirectionInput;
-    GPIO_InitStruct.pull = PAD_InternalPullUp;
-    GPIO_InitStruct.instance = DHT22_INSTANCE;
-    HT_GPIO_Init(&GPIO_InitStruct);
-}
-
-bool dht22_read(float* humidity, float* temperature) {
-    uint8_t data[5] = {0, 0, 0, 0, 0};
-    uint32_t timeout_counter;
-
-    __disable_irq(); 
-
-    // 1. Envia o sinal de início
-    dht22_pin_as_output();
-    HT_GPIO_WritePin(DHT22_PIN, DHT22_INSTANCE, 0); // LOW
-    delay_ms(18); // Delay de 18ms
-
-    HT_GPIO_WritePin(DHT22_PIN, DHT22_INSTANCE, 1); // HIGH
-    dht22_pin_as_input();
-    precise_delay_us(40);
-
-    // 2. Aguarda a resposta do sensor (com timeout)
-    timeout_counter = 10000;
-    while(HT_GPIO_PinRead(DHT22_INSTANCE, DHT22_PIN) == 1) { if (timeout_counter-- == 0) { __enable_irq(); return false; } }
-
-    timeout_counter = 10000;
-    while(HT_GPIO_PinRead(DHT22_INSTANCE, DHT22_PIN) == 0) { if (timeout_counter-- == 0) { __enable_irq(); return false; } }
-
-    timeout_counter = 10000;
-    while(HT_GPIO_PinRead(DHT22_INSTANCE, DHT22_PIN) == 1) { if (timeout_counter-- == 0) { __enable_irq(); return false; } }
-
-    // 3. Lê os 40 bits de dados (com timeouts)
-    for (int j = 0; j < 5; j++) {
-        for (int i = 0; i < 8; i++) {
-            timeout_counter = 10000;
-            while(HT_GPIO_PinRead(DHT22_INSTANCE, DHT22_PIN) == 0) { if (timeout_counter-- == 0) { __enable_irq(); return false; } }
-
-            precise_delay_us(35);
-            
-            data[j] <<= 1;
-            if (HT_GPIO_PinRead(DHT22_INSTANCE, DHT22_PIN) == 1) {
-                data[j] |= 1;
-                timeout_counter = 10000;
-                while(HT_GPIO_PinRead(DHT22_INSTANCE, DHT22_PIN) == 1) { if (timeout_counter-- == 0) { __enable_irq(); return false; } }
-            }
+static void sendQueueMsg(uint32_t msgId, uint32_t xTickstoWait)
+{
+    eventCallbackMessage_t *queueMsg = NULL;
+    queueMsg = malloc(sizeof(eventCallbackMessage_t));
+    queueMsg->messageId = msgId;
+    if (psEventQueueHandle)
+    {
+        if (pdTRUE != xQueueSend(psEventQueueHandle, &queueMsg, xTickstoWait))
+        {
+            HT_TRACE(UNILOG_MQTT, mqttAppTask80, P_INFO, 0, "xQueueSend error");
         }
     }
+}
 
-    __enable_irq(); // Reabilita as interrupções globais
+static INT32 registerPSUrcCallback(urcID_t eventID, void *param, uint32_t paramLen)
+{
+    CmiSimImsiStr *imsi = NULL;
+    CmiPsCeregInd *cereg = NULL;
+    UINT8 rssi = 0;
+    NmAtiNetifInfo *netif = NULL;
 
-    // 4. Verifica o Checksum
-    uint8_t checksum = (data[0] + data[1] + data[2] + data[3]) & 0xFF;
-    if (checksum != data[4]) {
-        return false;
+    switch (eventID)
+    {
+    case NB_URC_ID_SIM_READY:
+    {
+        imsi = (CmiSimImsiStr *)param;
+        memcpy(gImsi, imsi->contents, imsi->length);
+        simReady = 1;
+        break;
+    }
+    case NB_URC_ID_MM_SIGQ:
+    {
+        rssi = *(UINT8 *)param;
+        HT_TRACE(UNILOG_MQTT, mqttAppTask81, P_INFO, 1, "RSSI signal=%d", rssi);
+        break;
+    }
+    case NB_URC_ID_PS_BEARER_ACTED:
+    {
+        HT_TRACE(UNILOG_MQTT, mqttAppTask82, P_INFO, 0, "Default bearer activated");
+        break;
+    }
+    case NB_URC_ID_PS_BEARER_DEACTED:
+    {
+        HT_TRACE(UNILOG_MQTT, mqttAppTask83, P_INFO, 0, "Default bearer Deactivated");
+        break;
+    }
+    case NB_URC_ID_PS_CEREG_CHANGED:
+    {
+        cereg = (CmiPsCeregInd *)param;
+        gCellID = cereg->celId;
+        HT_TRACE(UNILOG_MQTT, mqttAppTask84, P_INFO, 4, "CEREG changed act:%d celId:%d locPresent:%d tac:%d", cereg->act, cereg->celId, cereg->locPresent, cereg->tac);
+        break;
+    }
+    case NB_URC_ID_PS_NETINFO:
+    {
+        netif = (NmAtiNetifInfo *)param;
+        if (netif->netStatus == NM_NETIF_ACTIVATED)
+            sendQueueMsg(QMSG_ID_NW_IPV4_READY, 0);
+        break;
     }
 
-    // 5. Decodifica os dados
-    *humidity = ((data[0] << 8) | data[1]) / 10.0f;
-    *temperature = (((data[2] & 0x7F) << 8) | data[3]) / 10.0f;
-    if (data[2] & 0x80) {
-        *temperature *= -1;
+    default:
+        break;
+    }
+    return 0;
+}
+
+static void HT_MQTTExampleTask(void *arg)
+{
+
+    int32_t ret;
+    uint8_t psmMode = 0, actType = 0;
+    uint16_t tac = 0;
+    uint32_t tauTime = 0, activeTime = 0, cellID = 0, nwEdrxValueMs = 0, nwPtwMs = 0;
+
+    eventCallbackMessage_t *queueItem = NULL;
+
+    registerPSEventCallback(NB_GROUP_ALL_MASK, registerPSUrcCallback);
+    psEventQueueHandle = xQueueCreate(APP_EVENT_QUEUE_SIZE, sizeof(eventCallbackMessage_t *));
+    if (psEventQueueHandle == NULL)
+    {
+        HT_TRACE(UNILOG_MQTT, mqttAppTask0, P_INFO, 0, "psEventQueue create error!");
+        return;
     }
 
-    return true;
+    slpManApplyPlatVoteHandle("EP_MQTT", &mqttEpSlpHandler);
+    slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_ACTIVE_STATE); // SLP_SLP2_STATE
+    HT_TRACE(UNILOG_MQTT, mqttAppTask1, P_INFO, 0, "first time run mqtt example");
+
+    HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
+    printf("HTNB32L-XXX-Template SenseClima Device!\n");
+    printf("Trying to connect...\n");
+    while (!simReady)
+        ;
+    HT_SetConnectioParameters();
+
+    while (1)
+    {
+        if (xQueueReceive(psEventQueueHandle, &queueItem, portMAX_DELAY))
+        {
+            switch (queueItem->messageId)
+            {
+            case QMSG_ID_NW_IPV4_READY:
+            case QMSG_ID_NW_IPV6_READY:
+            case QMSG_ID_NW_IPV4_6_READY:
+                appGetImsiNumSync((CHAR *)gImsi);
+                HT_STRING(UNILOG_MQTT, mqttAppTask2, P_SIG, "IMSI = %s", gImsi);
+
+                appGetNetInfoSync(gCellID, &gNetworkInfo);
+                if (NM_NET_TYPE_IPV4 == gNetworkInfo.body.netInfoRet.netifInfo.ipType)
+                    HT_TRACE(UNILOG_MQTT, mqttAppTask3, P_INFO, 4, "IP:\"%u.%u.%u.%u\"", ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[0],
+                             ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[1],
+                             ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[2],
+                             ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[3]);
+                ret = appGetLocationInfoSync(&tac, &cellID);
+                HT_TRACE(UNILOG_MQTT, mqttAppTask4, P_INFO, 3, "tac=%d, cellID=%d ret=%d", tac, cellID, ret);
+                // edrxModeValue = CMI_MM_ENABLE_EDRX_AND_ENABLE_IND;
+                actType = CMI_MM_EDRX_NB_IOT;
+                // reqEdrxValueMs = 20480;
+                //  appSetEDRXSettingSync(edrxModeValue, actType, reqEdrxValueMs);
+                ret = appGetEDRXSettingSync(&actType, &nwEdrxValueMs, &nwPtwMs);
+                HT_TRACE(UNILOG_MQTT, mqttAppTask5, P_INFO, 4, "actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d", actType, nwEdrxValueMs, nwPtwMs, ret);
+
+                psmMode = 1;
+                tauTime = 4000;
+                activeTime = 30;
+
+                {
+                    appGetPSMSettingSync(&psmMode, &tauTime, &activeTime);
+                    HT_TRACE(UNILOG_MQTT, mqttAppTask6, P_INFO, 3, "Get PSM info mode=%d, TAU=%d, ActiveTime=%d", psmMode, tauTime, activeTime);
+                }
+
+                HT_Fsm();
+
+                break;
+            case QMSG_ID_NW_DISCONNECT:
+                break;
+
+            default:
+                break;
+            }
+            free(queueItem);
+        }
+    }
 }
 
 /**
@@ -120,19 +192,21 @@ bool dht22_read(float* humidity, float* temperature) {
 */
 static void appInit(void *arg)
 {
-  dht22_pin_as_input();
-  delay_ms(2000); // Para estabilizar sensor
-  
-  while(1)
-  {
-      float temp = 0.0f, hum = 0.0f;
-      if (dht22_read(&hum, &temp))
-        printf("temp:%d.%d°C\thum:%d.%d\n", (int)temp, ((int)(temp*10))%10, (int)hum, ((int)(hum*10))%10);
-      else
-        printf("Falha ao ler DHT22\n");
-      
-      delay_ms(1000);
-  }
+    osThreadAttr_t task_attr;
+
+    if (BSP_GetPlatConfigItemValue(PLAT_CONFIG_ITEM_LOG_CONTROL) != 0)
+        HAL_UART_RecvFlowControl(false);
+
+    memset(&task_attr, 0, sizeof(task_attr));
+    memset(appTaskStack, 0xA5, INIT_TASK_STACK_SIZE);
+    task_attr.name = "HT_MQTTExample";
+    task_attr.stack_mem = appTaskStack;
+    task_attr.stack_size = INIT_TASK_STACK_SIZE;
+    task_attr.priority = osPriorityNormal;
+    task_attr.cb_mem = &initTask;             // task control block
+    task_attr.cb_size = sizeof(StaticTask_t); // size of task control block
+
+    osThreadNew(HT_MQTTExampleTask, NULL, &task_attr);
 }
 
 /**
@@ -143,16 +217,15 @@ static void appInit(void *arg)
 void main_entry(void)
 {
     BSP_CommonInit();
-    slpManNormalIOVoltSet(IOVOLT_3_30V);
-    uint32_t uart_cntrl = (ARM_USART_MODE_ASYNCHRONOUS | ARM_USART_DATA_BITS_8 | ARM_USART_PARITY_NONE |
-                           ARM_USART_STOP_BITS_1 | ARM_USART_FLOW_CONTROL_NONE);
-    HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
-
     osKernelInitialize();
+
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     registerAppEntry(appInit, NULL);
     if (osKernelGetState() == osKernelReady)
     {
         osKernelStart();
     }
-    while(1);
+    while (1)
+        ;
 }

@@ -47,7 +47,11 @@
         "freertos.h": "c",
         "slpman_qcx212.h": "c",
         "cmimm.h": "c",
-        "sockets.h": "c"
+        "sockets.h": "c",
+        "ht_senseclima.h": "c",
+        "mqttclient.h": "c",
+        "flash_qcx212.h": "c",
+        "pmu_qcx212.h": "c"
     },
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/sources/poky/bitbake/lib",
