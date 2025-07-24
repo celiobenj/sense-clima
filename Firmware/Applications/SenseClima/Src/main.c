@@ -135,7 +135,7 @@ static INT32 registerPSUrcCallback(urcID_t eventID, void *param, uint32_t paramL
  *
  * @param arg Task argument (unused).
  */
-static void HT_MQTTExampleTask(void *arg){
+static void HT_SenseClimaTask(void *arg){
     
     int32_t ret;
     uint8_t psmMode = 0, actType = 0;
@@ -234,7 +234,7 @@ static void appInit(void *arg)
     task_attr.cb_mem = &initTask;             // task control block
     task_attr.cb_size = sizeof(StaticTask_t); // size of task control block
 
-    osThreadNew(HT_MQTTExampleTask, NULL, &task_attr);
+    osThreadNew(HT_SenseClimaTask, NULL, &task_attr);
 }
 
 /**
