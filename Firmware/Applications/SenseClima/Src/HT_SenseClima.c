@@ -62,8 +62,8 @@ static const char topic_interval[] = {"hana/prototipagem/senseclima/01/interval"
 uint8_t voteHandle = 0xFF;
 extern uint8_t mqttEpSlpHandler;
 
-static StaticTask_t dht_thread, sleep_thread;
-static uint8_t dhtTaskStack[TASK_STACK_SIZE], sleepTaskStack[1024 * 2];
+static StaticTask_t dht_thread;
+static uint8_t dhtTaskStack[TASK_STACK_SIZE];
 
 /**
  * @brief Converts time components (days, hours, minutes, seconds) into total milliseconds.
@@ -147,7 +147,7 @@ void sleepWithMode(slpManSlpState_t mode)
     // slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_STATE_MAX); // Commented out in original.
 
     // Activate RTC timer as wakeup source.
-    uint64_t interval_ms = time_ms(0, 0, 0, 30);
+    uint64_t interval_ms = time_ms(0, 0, 0, 60);
     slpManDeepSlpTimerStart(TIMER_ID, interval_ms);
 
     // Passive wait - the system should enter sleep automatically.

@@ -145,7 +145,7 @@ void HT_MQTT_SubscribeCallback(MessageData *msg)
     memset(msg->topicName->lenstring.data, 0, msg->topicName->lenstring.len);
 }
 
-void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos)
+void HT_MQTT_Subscribe(MQTTClient *mqtt_client, const char *topic, enum QoS qos)
 {
     MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
 }

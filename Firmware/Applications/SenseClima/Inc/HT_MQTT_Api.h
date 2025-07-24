@@ -116,7 +116,7 @@ void HT_MQTT_SubscribeCallback(MessageData *msg);
  *  
  * \retval none
  *******************************************************************/
-void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos);
+void HT_MQTT_Subscribe(MQTTClient *mqtt_client, const char *topic, enum QoS qos);
 
 #endif /* __HT_MQTT_API_H__ */
 
