@@ -21,17 +21,11 @@
 
 */
 
-/*!
- * \file HT_Fsm.h
- * \brief MQTT Example finite state machine. 
-  * \author HT Micron Advanced R&D,
- *         Hêndrick Bataglin Gonçalves, Christian Roberto Lehmen,  Matheus da Silva Zorzeto, Felipe Kalinski Ferreira,
- *         Leandro Borges, Mauricio Carlotto Ribeiro, Henrique Kuhn, Cleber Haack, Eduardo Mendel
- *         Gleiser Alvarez Arrojo
- * 
- * \link https://github.com/htmicron
- * \version 0.1
- * \date February 23, 2023
+/**
+ * @file HT_SenseClima.h
+ * @brief Main application logic for the HTNB32L-XXX SenseClima project.
+ *
+ * This file defines application-specific data types and function prototypes.
  */
 
 #ifndef __HT_SENSECLIMA_H__
@@ -47,85 +41,59 @@
 #include "MQTTClient.h"
 
 /* Defines  ------------------------------------------------------------------*/
-#define LED_TASK_STACK_SIZE  (1024*4) 
-#define HT_MQTT_KEEP_ALIVE_INTERVAL 240                   /**</ Keep alive interval in ms. */
-#define HT_MQTT_VERSION 4                                 /**</ MQTT protocol version. */
+#define TASK_STACK_SIZE             (1024*4) /**< Stack size for application tasks, originally named after LED tasks. */
+#define HT_MQTT_KEEP_ALIVE_INTERVAL 240      /**< MQTT keep-alive interval in seconds. */
+#define HT_MQTT_VERSION             4        /**< MQTT protocol version. */
 
 #if MQTT_TLS_ENABLE == 1
-#define HT_MQTT_PORT   8883                               /**</ MQTT TCP TLS port. */
+#define HT_MQTT_PORT   8883                               /**< MQTT TCP TLS port. */
 #else
-#define HT_MQTT_PORT   1883                               /**</ MQTT TCP port. */
+#define HT_MQTT_PORT   1883                               /**< MQTT TCP port. */
 #endif
 
-#define HT_MQTT_SEND_TIMEOUT 60000                        /**</ MQTT TX timeout. */
-#define HT_MQTT_RECEIVE_TIMEOUT   60000                   /**</ MQTT RX timeout. */
-#define HT_MQTT_BUFFER_SIZE 1024                          /**</ Maximum MQTT buffer size. */
-#define HT_SUBSCRIBE_BUFF_SIZE  6                         /**</ Maximum buffer size to received from MQTT subscribe. */
+#define HT_MQTT_SEND_TIMEOUT    60000                     /**< MQTT TX timeout in milliseconds. */
+#define HT_MQTT_RECEIVE_TIMEOUT 60000                     /**< MQTT RX timeout in milliseconds. */
+#define HT_MQTT_BUFFER_SIZE     1024                      /**< Maximum MQTT buffer size. */
+#define HT_SUBSCRIBE_BUFF_SIZE  6                         /**< Maximum buffer size for MQTT subscribed messages. */
 
 /* Typedefs  ------------------------------------------------------------------*/
 
 /**
- * \enum HT_ConnectionStatus
- * \brief HTNB32L-XXX connection status.
+ * @brief HTNB32L-XXX connection status.
  */
 typedef enum {
-    HT_CONNECTED = 0,
-    HT_NOT_CONNECTED
+    HT_CONNECTED = 0,       /**< Device is connected. */
+    HT_NOT_CONNECTED        /**< Device is not connected. */
 } HT_ConnectionStatus;
 
 /**
- * \enum HT_FSM_States
- * \brief States definition for the FSM.
+ * @brief States definition for the Finite State Machine (FSM).
  */
 typedef enum {
-    HT_WAIT_FOR_BUTTON_STATE = 0,
-    HT_PUSH_BUTTON_HANDLE_STATE,
-    HT_MQTT_SUBSCRIBE_STATE,
-    HT_MQTT_PUBLISH_STATE,
-    HT_CHECK_SOCKET_STATE,
-    HT_SUBSCRIBE_HANDLE_STATE
+    HT_MQTT_SUBSCRIBE_STATE = 0, /**< State for subscribing to MQTT topics. */
+    HT_MQTT_PUBLISH_STATE,       /**< State for publishing MQTT messages. */
+    HT_CHECK_SOCKET_STATE,       /**< State for checking socket status. */
+    HT_SUBSCRIBE_HANDLE_STATE    /**< State for handling subscribed messages. */
 } HT_FSM_States;
-
-/**
- * \enum HT_Button
- * \brief Available buttons for MQTT Example app.
- */
-typedef enum {
-    HT_BLUE_BUTTON = 0,
-    HT_WHITE_BUTTON,
-    HT_UNDEFINED
-} HT_Button;
 
 /* Functions ------------------------------------------------------------------*/
 
-/*!******************************************************************
- * \fn void HT_FSM_SetSubscribeBuff(uint8_t *buff, uint8_t payload_len)
- * \brief Stores data received from subscribe in a usable buffer.
- *
- * \param[in]  none
- * \param[out] none
- *
- * \retval none
- *******************************************************************/
-void HT_FSM_SetSubscribeBuff(uint8_t *buff, uint8_t payload_len);
-<<<<<<< HEAD
-void interval_manager(uint8_t *payload, uint8_t payload_len, 
-=======
-void led_state_manager(uint8_t *payload, uint8_t payload_len, 
->>>>>>> main
+/**
+ * @brief Manages intervals based on received MQTT payload and topic.
+ * @param payload Pointer to the received payload data.
+ * @param payload_len Length of the payload.
+ * @param topic Pointer to the received topic string.
+ * @param topic_len Length of the topic string.
+ */
+void interval_manager(uint8_t *payload, uint8_t payload_len,
     uint8_t *topic, uint8_t topic_len);
 
-/*!******************************************************************
- * \fn void HT_Fsm(void)
- * \brief Finite State Machine of Push Button Example. Connect to
- *        MQTT Broker, then subscribe to MQTT topic. Waits for button
- *        interruption and publish the color of the button pressed.
+/**
+ * @brief Implements the Finite State Machine for the SenseClima application.
  *
- * \param[in]  none
- * \param[out] none
- *
- * \retval none
- *******************************************************************/
+ * Connects to the MQTT Broker, subscribes to topics, and handles data publishing
+ * (e.g., sensor data) and subscribed messages.
+ */
 void HT_Fsm(void);
 
 #endif /* __HT_SENSECLIMA_H__ */

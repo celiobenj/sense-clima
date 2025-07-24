@@ -52,7 +52,6 @@
 #include "netmgr.h"
 #include <stdio.h>
 #include "cmsis_os2.h"
-<<<<<<< HEAD
 #include "HT_MQTT_Api.h"
 #include "mw_config.h"
 #include "pmu_qcx212.h"
@@ -62,26 +61,16 @@
 #include "HT_SenseClima.h"
 #include "HT_GPIO_Api.h"
 #include "HT_DHT22.h"
-=======
 
+#define QMSG_ID_BASE               (0x160)
+#define QMSG_ID_NW_IPV4_READY      (QMSG_ID_BASE)       /**< Message ID for IPv4 network ready event. */
+#define QMSG_ID_NW_IPV6_READY      (QMSG_ID_BASE + 1)   /**< Message ID for IPv6 network ready event. */
+#define QMSG_ID_NW_IPV4_6_READY    (QMSG_ID_BASE + 2)   /**< Message ID for IPv4/IPv6 network ready event. */
+#define QMSG_ID_NW_DISCONNECT      (QMSG_ID_BASE + 3)   /**< Message ID for network disconnect event. */
+#define QMSG_ID_SOCK_SENDPKG       (QMSG_ID_BASE + 4)   /**< Message ID for socket send package event. */
+#define QMSG_ID_SOCK_RECVPKG       (QMSG_ID_BASE + 5)   /**< Message ID for socket receive package event. */
 
-/* Defines  ------------------------------------------------------------------*/
->>>>>>> main
-
-#define QMSG_ID_BASE               (0x160) 
-#define QMSG_ID_NW_IPV4_READY      (QMSG_ID_BASE)
-#define QMSG_ID_NW_IPV6_READY      (QMSG_ID_BASE + 1)
-#define QMSG_ID_NW_IPV4_6_READY    (QMSG_ID_BASE + 2)
-#define QMSG_ID_NW_DISCONNECT      (QMSG_ID_BASE + 3)
-#define QMSG_ID_SOCK_SENDPKG       (QMSG_ID_BASE + 4)
-#define QMSG_ID_SOCK_RECVPKG       (QMSG_ID_BASE + 5)
-
-#define INIT_TASK_STACK_SIZE    (1024*6)
-#define RINGBUF_READY_FLAG      (0x06)
-#define APP_EVENT_QUEUE_SIZE    (10)
-<<<<<<< HEAD
-#define MAX_PACKET_SIZE         (256)
-=======
-#define MAX_PACKET_SIZE         (256)
-
->>>>>>> main
+#define INIT_TASK_STACK_SIZE        (1024*6)    /**< Stack size for the main application initialization task. */
+#define RINGBUF_READY_FLAG          (0x06)      /**< Flag for ring buffer ready. */
+#define APP_EVENT_QUEUE_SIZE        (10)        /**< Size of the application event queue. */
+#define MAX_PACKET_SIZE             (256)       /**< Maximum packet size. */

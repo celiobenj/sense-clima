@@ -8,6 +8,12 @@
 #define DHT22_TIMEOUT_RESPONSE_PULSE    100
 #define DHT22_TIMEOUT_DATA_PULSE        100
 
+/**
+ * @brief Initializes the GPIO pin for the DHT22 sensor.
+ *
+ * Configures the DHT22 data pin as a GPIO input with appropriate pad settings.
+ * An external 4.7k pull-up resistor is mandatory for DHT22 operation.
+ */
 void DHT22_Init(void)
 {
     pad_config_t padConfig;
@@ -18,47 +24,52 @@ void DHT22_Init(void)
     padConfig.mux = PAD_MuxAlt0;
     PAD_SetPinConfig(DHT22_PAD_ID, &padConfig);
 
-    // Configure pin as input with pull-up.
-    // The line is idle high. The read function will switch to output to start communication.
+    // Configure pin as input. The line is idle high.
+    // The read function will temporarily switch to output to initiate communication.
     config.pinDirection = GPIO_DirectionInput;
     GPIO_PinConfig(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN, &config);
     // NOTE: An external 4.7k pull-up resistor is MANDATORY for DHT22 operation.
-    // The internal pull-up is explicitly disabled to ensure reliance on the correct external component.
     PAD_SetPinPullConfig(DHT22_PAD_ID, PAD_AutoPull);
 }
 
+/**
+ * @brief Reads temperature and humidity from the DHT22 sensor.
+ * @param temperature Pointer to store the read temperature.
+ * @param humidity Pointer to store the read humidity.
+ * @return DHT22_OK on success, or an error code on failure.
+ */
 int DHT22_Read(float *temperature, float *humidity)
 {
     uint8_t data[5] = {0, 0, 0, 0, 0};
-    uint16_t cycles[80]; // Array to store pulse durations
+    uint16_t cycles[80]; // Stores pulse durations (low and high for each bit)
     int ret = 0;
     gpio_pin_config_t config;
 
     // --- Start of critical section ---
-    // Disable task switching to ensure precise timing
+    // Disable task switching to ensure precise timing for sensor communication.
     vTaskSuspendAll();
 
     // === STEP 1: Send start signal ===
-    // Temporarily configure pin as output
+    // Temporarily configure pin as output to pull it low.
     config.pinDirection = GPIO_DirectionOutput;
     GPIO_PinConfig(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN, &config);
 
-    // Pull line low for > 1ms
+    // Pull line low for > 1ms to signal the sensor.
     HT_GPIO_WritePin(DHT22_GPIO_PIN, DHT22_GPIO_INSTANCE, 0);
-    delay_us(1100); // 1.1ms is a common value
+    delay_us(1100); // 1.1ms
 
-    // Pull line high and switch back to input
+    // Pull line high and switch back to input to prepare for sensor response.
     HT_GPIO_WritePin(DHT22_GPIO_PIN, DHT22_GPIO_INSTANCE, 1);
     delay_us(40);
 
     config.pinDirection = GPIO_DirectionInput;
     GPIO_PinConfig(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN, &config);
 
-    delay_us(1); // Small delay for pin to settle
+    delay_us(1); // Small delay for pin to settle.
 
     // === STEP 2: Wait for sensor response ===
     uint16_t timeout_counter = 0;
-    // Wait for pin to go LOW
+    // Wait for pin to go LOW (first part of sensor's response).
     while (GPIO_PinRead(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN))
     {
         if (++timeout_counter > DHT22_TIMEOUT_RESPONSE_START)
@@ -68,7 +79,7 @@ int DHT22_Read(float *temperature, float *humidity)
         }
         delay_us(1);
     }
-    // Wait for pin to go HIGH
+    // Wait for pin to go HIGH (second part of sensor's response).
     timeout_counter = 0;
     while (!GPIO_PinRead(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN))
     {
@@ -79,7 +90,7 @@ int DHT22_Read(float *temperature, float *humidity)
         }
         delay_us(1);
     }
-    // Wait for pin to go LOW again (start of data)
+    // Wait for pin to go LOW again (start of data transmission).
     timeout_counter = 0;
     while (GPIO_PinRead(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN))
     {
@@ -94,7 +105,7 @@ int DHT22_Read(float *temperature, float *humidity)
     // === STEP 3: Read all 40 bits (80 pulses) into the cycles array ===
     for (int i = 0; i < 80; i += 2)
     {
-        // Measure LOW pulse duration (should be ~50us)
+        // Measure LOW pulse duration (~50us)
         uint16_t low_duration = 0;
         while (!GPIO_PinRead(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN))
         {
@@ -107,7 +118,7 @@ int DHT22_Read(float *temperature, float *humidity)
         }
         cycles[i] = low_duration;
 
-        // Measure HIGH pulse duration (26-28us for 0, 70us for 1)
+        // Measure HIGH pulse duration (26-28us for bit 0, 70us for bit 1)
         uint16_t high_duration = 0;
         while (GPIO_PinRead(DHT22_GPIO_INSTANCE, DHT22_GPIO_PIN))
         {
@@ -127,7 +138,7 @@ end_read:
 
     if (ret != 0)
     {
-        return ret; // Return error code
+        return ret; // Return error code on timeout.
     }
 
     // === STEP 4: Decode pulses from the array into data bytes ===
@@ -137,7 +148,7 @@ end_read:
         uint16_t highCycles = cycles[2 * i + 1];
 
         data[i / 8] <<= 1;
-        // The robust way: compare high pulse duration to low pulse duration
+        // A bit is '1' if the high pulse duration is longer than the low pulse duration.
         if (highCycles > lowCycles)
         {
             data[i / 8] |= 1;
@@ -145,12 +156,13 @@ end_read:
     }
 
     // === STEP 5: Verify checksum and calculate final values ===
+    // Check if the received checksum matches the calculated one.
     if (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF))
     {
         *humidity = ((uint16_t)(data[0] << 8) | data[1]) / 10.0f;
         uint16_t raw_temp = (uint16_t)(data[2] & 0x7F) << 8 | data[3];
         *temperature = raw_temp / 10.0f;
-        if (data[2] & 0x80)
+        if (data[2] & 0x80) // Check sign bit for negative temperatures
         {
             *temperature *= -1.0f;
         }
