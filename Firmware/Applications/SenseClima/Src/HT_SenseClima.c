@@ -144,8 +144,6 @@ void sleepWithMode(slpManSlpState_t mode)
     // Enable sleep mode using the platform vote handle.
     slpManPlatVoteEnableSleep(voteHandle, mode);
 
-    // slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_STATE_MAX); // Commented out in original.
-
     // Activate RTC timer as wakeup source.
     uint64_t interval_ms = time_ms(0, 0, 0, 60);
     slpManDeepSlpTimerStart(TIMER_ID, interval_ms);
